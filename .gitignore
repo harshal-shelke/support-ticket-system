@@ -1,0 +1,39 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# Maven
+.mvn/
+log/
+logs/
+mvnw
+mvnw.cmd
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Node
+node_modules/
+build/
+
+# Logs
+*.log
+
+# Environment files
+.env
+
+
+# Ignore environment config
+src/main/resources/application.yml
+src/main/resources/application.yaml
