@@ -5,6 +5,17 @@
 *.ear
 target/
 
+# Ignore all Spring Boot secrets
+application.yml
+application.yaml
+
+# IDEA / build files
+*.iml
+target/
+.gradle/
+build/
+
+
 # Maven
 .mvn/
 log/
@@ -37,3 +48,13 @@ build/
 # Ignore environment config
 src/main/resources/application.yml
 src/main/resources/application.yaml
+
+### ignore sensitive configs ###
+auth-service/src/main/resources/*.yaml
+auth-service/src/main/resources/*.yml
+auth-service/src/main/resources/application.yaml
+auth-service/src/main/resources/application.yml
+
+### ignore local env ###
+*.env
+*.properties
