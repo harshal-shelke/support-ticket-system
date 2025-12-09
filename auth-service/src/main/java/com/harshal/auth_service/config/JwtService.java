@@ -1,16 +1,22 @@
 package com.harshal.auth_service.config;
 
+import com.harshal.auth_service.entity.User;
+import com.harshal.auth_service.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+    private final UserRepository userRepository;
     // 32+ char secret key (just a long random string)
     private static final String SECRET_KEY = "this_is_my_super_secret_jwt_key_12345";
 
@@ -19,8 +25,10 @@ public class JwtService {
     }
 
     public String generateToken(String email) {
+        Optional<User> user=userRepository.findByEmail(email);
         return Jwts.builder()
                 .setSubject(email) // who is this token for? -> email
+                .claim("role", user.get().getRole())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
                 .signWith(SignatureAlgorithm.HS256, getSignKey())

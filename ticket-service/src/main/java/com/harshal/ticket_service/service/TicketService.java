@@ -5,26 +5,31 @@ import com.harshal.ticket_service.dto.TicketRequest;
 import com.harshal.ticket_service.dto.TicketResponse;
 import com.harshal.ticket_service.dto.Remark;
 import com.harshal.ticket_service.entity.Ticket;
+import com.harshal.ticket_service.exception.ApiException;
 import com.harshal.ticket_service.repository.TicketRepository;
+import com.harshal.ticket_service.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service                   // marks this class as service (business logic layer)
-@RequiredArgsConstructor   // creates constructor for all final fields (for DI)
+@Service                   // service = business logic layer
+@RequiredArgsConstructor   // constructor injection for final fields
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final SecurityUtil securityUtil;
 
-    // Create a new ticket for a user
-    public TicketResponse createTicket(TicketRequest request, String userId) {
+    // Create a new ticket for a user (controller will ensure CUSTOMER only)
+    public TicketResponse createTicket(TicketRequest request, String userEmail) {
+
         Ticket ticket = new Ticket();
         ticket.setTitle(request.getTitle());
         ticket.setDescription(request.getDescription());
-        ticket.setCreatedBy(userId);
+        ticket.setCreatedBy(userEmail);
         ticket.setAssignedTo(null);           // no staff yet
         ticket.setStatus("OPEN");             // default status
         ticket.setPriority("LOW");
@@ -37,25 +42,45 @@ public class TicketService {
         return mapToResponse(saved);
     }
 
-    // Get all tickets created by a user
-    public List<TicketResponse> getMyTickets(String userId) {
-        List<Ticket> tickets = ticketRepository.findByCreatedBy(userId);
+    // Get all tickets created by a CUSTOMER (controller will ensure role)
+    public List<TicketResponse> getMyTickets(String userEmail) {
+
+        List<Ticket> tickets = ticketRepository.findByCreatedBy(userEmail);
+
         return tickets.stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    // Get single ticket (can be useful later)
-    public TicketResponse getTicketById(String id) {
-        Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+    // Get ticket by ID with ownership checks
+    public TicketResponse getTicketById(String ticketId, String userEmail, String userRole) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() ->
+                        new ApiException("Ticket not found", HttpStatus.NOT_FOUND));
+
+        // CUSTOMER -> can view only their own tickets
+        if (securityUtil.isCustomer(userRole) &&
+                !ticket.getCreatedBy().equalsIgnoreCase(userEmail)) {
+            throw new ApiException("You can view only your own tickets", HttpStatus.FORBIDDEN);
+        }
+
+        // STAFF -> can view only assigned tickets
+        if (securityUtil.isStaff(userRole) &&
+                (ticket.getAssignedTo() == null ||
+                        !ticket.getAssignedTo().equalsIgnoreCase(userEmail))) {
+            throw new ApiException("This ticket is not assigned to you", HttpStatus.FORBIDDEN);
+        }
+
+        // ADMIN -> no restriction
         return mapToResponse(ticket);
     }
 
-    // Update ticket status (OPEN / IN_PROGRESS / RESOLVED / CLOSED)
+    // Update ticket status (called only by ADMIN/STAFF – controller checks)
     public TicketResponse updateStatus(String ticketId, String status) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() ->
+                        new ApiException("Ticket not found", HttpStatus.NOT_FOUND));
 
         ticket.setStatus(status);
         ticket.setUpdatedAt(LocalDateTime.now());
@@ -64,10 +89,32 @@ public class TicketService {
         return mapToResponse(saved);
     }
 
-    // Add remark to ticket
-    public List<Remark> addRemark(String ticketId, RemarkRequest request, String userId) {
+    public List<Remark> addRemark(
+            String ticketId,
+            RemarkRequest request,
+            String userEmail,
+            String userRole
+    ) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() ->
+                        new ApiException("Ticket not found", HttpStatus.NOT_FOUND));
+
+        // CUSTOMER → can remark only on own ticket
+        if (securityUtil.isCustomer(userRole)) {
+            if (!ticket.getCreatedBy().equalsIgnoreCase(userEmail)) {
+                throw new ApiException("You can remark only on your own ticket", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        // STAFF → can remark only on assigned ticket
+        if (securityUtil.isStaff(userRole)) {
+            if (ticket.getAssignedTo() == null ||
+                    !ticket.getAssignedTo().equalsIgnoreCase(userEmail)) {
+                throw new ApiException("This ticket is not assigned to you", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        // ADMIN → always allowed (no restriction)
 
         if (ticket.getRemarks() == null) {
             ticket.setRemarks(new ArrayList<>());
@@ -75,7 +122,7 @@ public class TicketService {
 
         Remark remark = new Remark();
         remark.setMessage(request.getMessage());
-        remark.setCreatedBy(userId);
+        remark.setCreatedBy(userEmail);
         remark.setCreatedAt(LocalDateTime.now());
 
         ticket.getRemarks().add(remark);
@@ -86,7 +133,38 @@ public class TicketService {
         return ticket.getRemarks();
     }
 
-    // Mapper: converts entity -> DTO
+    // Delete ticket (who can delete is enforced by controller)
+    public void deleteTicket(String ticketId) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() ->
+                        new ApiException("Ticket not found", HttpStatus.NOT_FOUND));
+
+        ticketRepository.delete(ticket);
+    }
+
+    // ADMIN: Get ALL tickets
+    public List<TicketResponse> getAllTickets() {
+        return ticketRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // ADMIN: Assign ticket to a staff
+    public TicketResponse assignTicket(String ticketId, String staffEmail) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() ->
+                        new ApiException("Ticket not found", HttpStatus.NOT_FOUND));
+
+        ticket.setAssignedTo(staffEmail);
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        Ticket updated = ticketRepository.save(ticket);
+        return mapToResponse(updated);
+    }
+
+    // entity -> DTO mapper
     private TicketResponse mapToResponse(Ticket ticket) {
         TicketResponse res = new TicketResponse();
         res.setId(ticket.getId());
@@ -101,4 +179,6 @@ public class TicketService {
         res.setRemarks(ticket.getRemarks());
         return res;
     }
+
+
 }

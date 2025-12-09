@@ -5,6 +5,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+
 @Document(collection = "users")
 @Getter
 @Setter
@@ -19,11 +21,8 @@ public class User {
     private String email;
     private String password;
 
-//    private String name;
-//    private String email;
-//    private String password;
-//    private String role; // "ADMIN", "STAFF", "CUSTOMER"
-//    private boolean active;
-//    private long createdAt;
+    private String role; // "ADMIN", "STAFF", "CUSTOMER"
+    private boolean active;
+    private LocalDateTime createdAt;
 
 }

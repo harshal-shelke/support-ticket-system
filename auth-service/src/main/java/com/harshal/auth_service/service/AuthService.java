@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -26,6 +27,9 @@ public class AuthService {
         User user=new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setCreatedAt(LocalDateTime.now());
+        user.setRole("CUSTOMER");
+        user.setActive(Boolean.parseBoolean("True"));
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
@@ -38,6 +42,9 @@ public class AuthService {
         Optional<User> user = userRepository.findByEmail(request.getEmail());
 
         if(user.isEmpty())return new AuthResponse("Invalid Email or Password",null);
+//        if (!user.get().isActive()) {
+//            return new AuthResponse("Account disabled by admin",null);
+//        }
 
         boolean matches = passwordEncoder.matches(request.getPassword(), user.get().getPassword());
 
