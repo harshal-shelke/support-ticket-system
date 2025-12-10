@@ -21,38 +21,75 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder=new BCryptPasswordEncoder();
 
     public AuthResponse register(RegisterRequest request){
-        if(userRepository.findByEmail(request.getEmail()).isPresent()){
-            return new AuthResponse("Email is Already Present",null);
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return new AuthResponse("Email already exists", null);
         }
-        User user=new User();
+
+        User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setCreatedAt(LocalDateTime.now());
         user.setRole("CUSTOMER");
-        user.setActive(Boolean.parseBoolean("True"));
+        user.setActive(true);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
 
         String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse("User Registered Successsfully",token);
+        return new AuthResponse("User registered successfully", token);
     }
 
-    public AuthResponse login(LoginRequest request){
+    public AuthResponse login(LoginRequest request) {
         Optional<User> user = userRepository.findByEmail(request.getEmail());
 
-        if(user.isEmpty())return new AuthResponse("Invalid Email or Password",null);
-//        if (!user.get().isActive()) {
-//            return new AuthResponse("Account disabled by admin",null);
-//        }
+        if (user.isEmpty()) {
+            return new AuthResponse("Invalid Email or Password", null);
+        }
+
+        if (!user.get().isActive()) {
+            return new AuthResponse("Your account has been disabled by ADMIN", null);
+        }
 
         boolean matches = passwordEncoder.matches(request.getPassword(), user.get().getPassword());
 
-        if(!matches){
-            return new AuthResponse("Password is Incorrect",null);
+        if (!matches) {
+            return new AuthResponse("Password is incorrect", null);
         }
 
         String token = jwtService.generateToken(user.get().getEmail());
-        return new AuthResponse("Login Successful",token);
+        return new AuthResponse("Login successful", token);
     }
+
+
+    // ---------------- ADMIN METHODS ----------------
+
+    public String changeRole(String email, String newRole) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()) {
+            return "User not found";
+        }
+
+        user.get().setRole(newRole);
+        userRepository.save(user.get());
+        return "Role updated successfully";
+    }
+
+    public String disableUser(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()) return "User not found";
+
+        user.get().setActive(false);
+        userRepository.save(user.get());
+        return "User disabled";
+    }
+
+    public String enableUser(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()) return "User not found";
+
+        user.get().setActive(true);
+        userRepository.save(user.get());
+        return "User enabled";
+    }
+
 }
