@@ -11,10 +11,16 @@ import com.harshal.ticket_service.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.harshal.ticket_service.kafka.TicketEventProducer;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 
 @Service                   // service = business logic layer
 @RequiredArgsConstructor   // constructor injection for final fields
@@ -22,6 +28,9 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final SecurityUtil securityUtil;
+    private final TicketEventProducer eventProducer;
+    private final ObjectMapper objectMapper;
+
 
     // Create a new ticket for a user (controller will ensure CUSTOMER only)
     public TicketResponse createTicket(TicketRequest request, String userEmail) {
@@ -39,6 +48,23 @@ public class TicketService {
         ticket.setRemarks(new ArrayList<>());
 
         Ticket saved = ticketRepository.save(ticket);
+        // Kafka Event
+        try {
+            // Prepare event
+            Map<String, Object> event = new HashMap<>();
+            event.put("type", "TICKET_CREATED");
+            event.put("ticketId", saved.getId());
+            event.put("createdBy", userEmail);
+
+            String eventJson = objectMapper.writeValueAsString(event);
+
+            // Publish to Kafka
+            eventProducer.sendTicketCreatedEvent(eventJson);
+
+        } catch (Exception e) {
+            System.out.println("❌ Error sending Kafka event: " + e.getMessage());
+        }
+
         return mapToResponse(saved);
     }
 

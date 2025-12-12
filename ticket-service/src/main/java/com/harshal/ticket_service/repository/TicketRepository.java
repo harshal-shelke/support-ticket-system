@@ -13,4 +13,6 @@ public interface TicketRepository extends MongoRepository<Ticket,String> {
     List<Ticket> findByAssignedTo(String staffId); // Staff: view assigned tickets
 
     List<Ticket> findByStatus(String status);      // Admin: filter by status
+
+    long countByAssignedTo(String staffEmail);
 }

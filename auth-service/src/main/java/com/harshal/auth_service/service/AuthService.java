@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -92,4 +93,11 @@ public class AuthService {
         return "User enabled";
     }
 
+    public List<User> getAllStaffUsers() {
+        return userRepository.findByRoleAndActive("STAFF", true);
+    }
+
+    public List<User> getAllStaff() {
+        return userRepository.findByRole("STAFF");
+    }
 }

@@ -1,10 +1,13 @@
 package com.harshal.auth_service.controller;
 
+import com.harshal.auth_service.entity.User;
 import com.harshal.auth_service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/admin/users")
@@ -55,4 +58,17 @@ public class AdminUserController {
 
         return ResponseEntity.ok(userService.enableUser(email));
     }
+
+    @GetMapping("/staff")
+    public ResponseEntity<List<User>> getAllStaffUsers(
+            @RequestHeader("X-User-Role") String requesterRole
+    ) {
+        if (!"ADMIN".equalsIgnoreCase(requesterRole)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<User> staffUsers = userService.getAllStaff();
+        return ResponseEntity.ok(staffUsers);
+    }
+
 }
