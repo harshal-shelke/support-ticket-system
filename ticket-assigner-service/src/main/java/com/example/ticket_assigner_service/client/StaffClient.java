@@ -14,7 +14,7 @@ public class StaffClient {
     private final RestTemplate restTemplate;
 
     // URL of AUTH SERVICE (local for now – later via gateway)
-    private static final String AUTH_SERVICE_URL = "http://localhost:8081/admin/users/staff";
+    private static final String AUTH_SERVICE_URL = "http://auth-service:8081/admin/users/staff";
 
     public List<Map<String, Object>> fetchStaffList() {
         List<Map<String, Object>> staffList =

@@ -1,5 +1,6 @@
 package com.harshal.ticket_service.service;
 
+import com.harshal.ticket_service.config.FeatureFlagConfig;
 import com.harshal.ticket_service.dto.RemarkRequest;
 import com.harshal.ticket_service.dto.TicketRequest;
 import com.harshal.ticket_service.dto.TicketResponse;
@@ -30,6 +31,8 @@ public class TicketService {
     private final SecurityUtil securityUtil;
     private final TicketEventProducer eventProducer;
     private final ObjectMapper objectMapper;
+    private final FallbackAutoAssignService fallbackAutoAssignService;
+    private final FeatureFlagConfig featureFlagConfig;
 
 
     // Create a new ticket for a user (controller will ensure CUSTOMER only)
@@ -48,22 +51,32 @@ public class TicketService {
         ticket.setRemarks(new ArrayList<>());
 
         Ticket saved = ticketRepository.save(ticket);
-        // Kafka Event
-        try {
-            // Prepare event
-            Map<String, Object> event = new HashMap<>();
-            event.put("type", "TICKET_CREATED");
-            event.put("ticketId", saved.getId());
-            event.put("createdBy", userEmail);
+        // Auto assignment logic (Kafka OR fallback)
+        if (featureFlagConfig.isKafkaEnabled()) {
 
-            String eventJson = objectMapper.writeValueAsString(event);
+            // Kafka Event
+            try {
 
-            // Publish to Kafka
-            eventProducer.sendTicketCreatedEvent(eventJson);
+                // Prepare event
+                Map<String, Object> event = new HashMap<>();
+                event.put("type", "TICKET_CREATED");
+                event.put("ticketId", saved.getId());
+                event.put("createdBy", userEmail);
 
-        } catch (Exception e) {
-            System.out.println("❌ Error sending Kafka event: " + e.getMessage());
+                String eventJson = objectMapper.writeValueAsString(event);
+
+                // Publish to Kafka
+                eventProducer.sendTicketCreatedEvent(eventJson);
+
+            } catch (Exception e) {
+                System.out.println("❌ Error sending Kafka event: " + e.getMessage());
+            }
+
+        } else {
+            // Fallback direct assignment (NO Kafka)
+            fallbackAutoAssignService.assign(saved);
         }
+
 
         return mapToResponse(saved);
     }

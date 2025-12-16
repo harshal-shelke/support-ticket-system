@@ -18,9 +18,9 @@ public class AutoAssignService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String AUTH_INTERNAL_URL = "http://localhost:8081/auth/internal/staff";
-    private final String TICKET_COUNT_URL = "http://localhost:8082/internal/tickets/assigned-count?staffEmail=";
-    private final String TICKET_ASSIGN_URL = "http://localhost:8082/internal/tickets/assign/";
+    private final String AUTH_INTERNAL_URL = "http://auth-service:8081/auth/internal/staff";
+    private final String TICKET_COUNT_URL = "http://ticket-service:8082/internal/tickets/assigned-count?staffEmail=";
+    private final String TICKET_ASSIGN_URL = "http://ticket-service:8082/internal/tickets/assign/";
 
     // Main method to process a ticket-created event
     public void processTicketCreatedEvent(String eventJson) {
