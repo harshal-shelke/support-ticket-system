@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: ticket-service
+
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI}
+
+server:
+  port: ${PORT:8082}
+
+features:
+  kafka-enabled: ${FEATURES_KAFKA_ENABLED:false}

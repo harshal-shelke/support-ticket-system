@@ -20,7 +20,7 @@ public class FallbackAutoAssignService {
     private final TicketRepository ticketRepository;
 
     private static final String AUTH_INTERNAL_STAFF_URL =
-            "http://auth-service:8081/auth/internal/staff";
+            "https://auth-service-iuro.onrender.com/auth/internal/staff";
 
     public void assign(Ticket ticket) {
 
