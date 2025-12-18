@@ -12,7 +12,7 @@ public class GatewayCorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("https://supportdesk-zag4.onrender.com");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
