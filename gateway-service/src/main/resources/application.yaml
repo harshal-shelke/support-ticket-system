@@ -1,0 +1,43 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: gateway-service
+
+  main:
+    web-application-type: reactive
+
+  cloud:
+    gateway:
+      routes:
+
+        # 🔓 AUTH SERVICE (NO JWT)
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+          predicates:
+            - Path=/auth/**
+
+        # 🔒 AUTH SERVICE — ADMIN
+        - id: admin-user-service
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+          predicates:
+            - Path=/admin/users/**
+          filters:
+            - JwtAuthFilter
+
+        # 🔒 TICKET SERVICE
+        - id: ticket-service
+          uri: ${TICKET_SERVICE_URL:http://ticket-service:8082}
+          predicates:
+            - Path=/tickets/**
+          filters:
+            - JwtAuthFilter
+
+        # 🔒 ADMIN — TICKET SERVICE
+        - id: admin-ticket-service
+          uri: ${TICKET_SERVICE_URL:http://ticket-service:8082}
+          predicates:
+            - Path=/admin/tickets/**
+          filters:
+            - JwtAuthFilter
