@@ -1,14 +1,17 @@
-# 1️⃣ Base image with Java
-FROM eclipse-temurin:17-jdk-alpine
+# -------- BUILD STAGE --------
+FROM maven:3.9.6-eclipse-temurin-17 AS build
+WORKDIR /build
 
-# 2️⃣ Create app directory inside container
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+# -------- RUN STAGE --------
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# 3️⃣ Copy Maven build (jar) into container
-COPY target/*.jar app.jar
+COPY --from=build /build/target/*.jar app.jar
 
-# 4️⃣ Expose port used by auth-service
 EXPOSE 8081
-
-# 5️⃣ Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
