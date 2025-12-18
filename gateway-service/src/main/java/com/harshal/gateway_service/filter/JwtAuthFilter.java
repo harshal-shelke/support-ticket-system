@@ -4,10 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -16,17 +16,17 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 
-@Component                   // register filter as Spring bean
-@Slf4j                       // gives us log.error / log.info
+@Component
+@Slf4j
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Config> {
 
     public JwtAuthFilter() {
-        super(Config.class); // required by AbstractGatewayFilterFactory
+        super(Config.class);
     }
 
-    private String secret="this_is_my_super_secret_jwt_key_12345";   // injected from application.yml
+    private final String secret = "this_is_my_super_secret_jwt_key_12345";
 
-    public static class Config {}  // empty config class required by gateway
+    public static class Config {}
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -36,10 +36,12 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
 
-            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+            String authHeader =
+                    exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return this.onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED);
             }
 
             String token = authHeader.substring(7);
@@ -52,18 +54,12 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                         .parseClaimsJws(token)
                         .getBody();
             } catch (Exception e) {
-                return this.onError(exchange, "Invalid Token", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "Invalid Token", HttpStatus.UNAUTHORIZED);
             }
 
-            String email = claims.getSubject();                    // subject = email in our JwtService
+            String email = claims.getSubject();
             String role = claims.get("role", String.class);
-            if (role == null) {
-                role = "CUSTOMER";                                 // default for now
-            }
-
-            if (email == null) {
-                return this.onError(exchange, "Invalid token payload", HttpStatus.UNAUTHORIZED);
-            }
+            if (role == null) role = "CUSTOMER";
 
             var mutatedRequest = exchange.getRequest()
                     .mutate()

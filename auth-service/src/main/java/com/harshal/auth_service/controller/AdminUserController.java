@@ -71,4 +71,17 @@ public class AdminUserController {
         return ResponseEntity.ok(staffUsers);
     }
 
+    // ADMIN ONLY: get all users
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers(
+            @RequestHeader("X-User-Role") String requesterRole
+    ) {
+        if (!"ADMIN".equalsIgnoreCase(requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+
 }

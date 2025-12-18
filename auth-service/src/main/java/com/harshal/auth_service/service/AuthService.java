@@ -100,4 +100,9 @@ public class AuthService {
     public List<User> getAllStaff() {
         return userRepository.findByRole("STAFF");
     }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
 }

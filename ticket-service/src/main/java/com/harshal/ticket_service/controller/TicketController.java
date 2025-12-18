@@ -76,6 +76,17 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.addRemark(id, request, email, role));
     }
 
+    // STAFF ONLY: Get tickets assigned to me
+    @GetMapping("/assigned")
+    public ResponseEntity<List<TicketResponse>> getAssignedTickets(
+            @RequestHeader("X-User-Email") String email,
+            @RequestHeader("X-User-Role") String role
+    ) {
+        securityUtil.allowStaffOnly(role);
+        return ResponseEntity.ok(ticketService.getAssignedTickets(email));
+    }
+
+
     // delete from here = only for owner/customer is possible if you want later
     // global admin delete is handled in AdminTicketController
 }

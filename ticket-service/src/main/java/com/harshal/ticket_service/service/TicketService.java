@@ -172,6 +172,17 @@ public class TicketService {
         return ticket.getRemarks();
     }
 
+    // STAFF: Get tickets assigned to logged-in staff
+    public List<TicketResponse> getAssignedTickets(String staffEmail) {
+
+        List<Ticket> tickets = ticketRepository.findByAssignedTo(staffEmail);
+
+        return tickets.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+
     // Delete ticket (who can delete is enforced by controller)
     public void deleteTicket(String ticketId) {
 

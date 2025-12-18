@@ -10,7 +10,7 @@ import java.util.List;
 public interface TicketRepository extends MongoRepository<Ticket,String> {
     List<Ticket> findByCreatedBy(String userId);   // Customer: view own tickets
 
-    List<Ticket> findByAssignedTo(String staffId); // Staff: view assigned tickets
+    List<Ticket> findByAssignedTo(String email); // Staff: view assigned tickets
 
     List<Ticket> findByStatus(String status);      // Admin: filter by status
 
