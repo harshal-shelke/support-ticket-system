@@ -1,0 +1,16 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ticket-assigner-service
+
+  kafka:
+    bootstrap-servers: kafka:9092
+
+    consumer:
+      group-id: ticket-assigner-group
+      auto-offset-reset: earliest
+
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
